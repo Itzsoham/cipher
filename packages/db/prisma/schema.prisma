@@ -1,0 +1,152 @@
+// Better Auth models were generated once with `auth generate`.
+// This file is maintained by hand from now on. Do not re-run the generator.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String       @id
+  name             String
+  email            String
+  emailVerified    Boolean      @default(false)
+  image            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  twoFactorEnabled Boolean?     @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  twofactors       TwoFactor[]
+  vaultConfig      VaultConfig?
+  entries          VaultEntry[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model RateLimit {
+  id          String @id
+  key         String
+  count       Int
+  lastRequest BigInt
+
+  @@unique([key])
+  @@map("rateLimit")
+}
+
+// ---------------------------------------------------------------------------
+// Vault. Only the entry type and timestamps are stored in plaintext.
+// ---------------------------------------------------------------------------
+
+enum EntryType {
+  password
+  secure_note
+  file
+}
+
+model VaultConfig {
+  userId             String   @id
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cryptoVersion      Int      @default(1)
+  vaultKeyVersion    Int      @default(1) // for future VK rotation
+  kdfAlgorithm       String // "argon2id"
+  kdfSalt            Bytes // 16 bytes
+  kdfMemoryKiB       Int
+  kdfIterations      Int
+  kdfParallelism     Int
+  masterWrappedKey   Bytes
+  masterWrapIv       Bytes
+  recoveryHkdfSalt   Bytes
+  recoveryWrappedKey Bytes
+  recoveryWrapIv     Bytes
+  recoveryCreatedAt  DateTime @default(now())
+  autoLockMinutes    Int      @default(5)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model VaultEntry {
+  id              String    @id @db.Uuid // client-generated; bound into AES-GCM AAD
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            EntryType // plaintext
+  cryptoVersion   Int       @default(1)
+  vaultKeyVersion Int       @default(1)
+  encryptedData   Bytes // padded JSON (title, site, username, … | fileName, mimeType, size)
+  iv              Bytes
+  r2Key           String?   @unique // "u/<userId>/<uuid>", never derived from filename
+  blobIv          Bytes?
+  blobSize        Int?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt // last-write-wins
+
+  @@index([userId])
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "@cipher/typescript-config/react-library.json",
+  "compilerOptions": {
+    "paths": {
+      "@cipher/ui/*": ["./src/*"]
+    }
+  },
+  "include": ["."],
+  "exclude": ["node_modules", "dist"]
+}

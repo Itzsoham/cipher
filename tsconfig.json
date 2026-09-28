@@ -1,0 +1,4 @@
+{
+  "extends": "@cipher/typescript-config/base.json"
+}
+

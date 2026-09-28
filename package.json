@@ -1,0 +1,27 @@
+{
+  "name": "cipher",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "test:e2e": "turbo test:e2e",
+    "db:generate": "turbo db:generate"
+  },
+  "devDependencies": {
+    "@cipher/eslint-config": "workspace:*",
+    "@cipher/typescript-config": "workspace:*",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "turbo": "2.11.5",
+    "typescript": "5.9.3"
+  },
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": "22.x"
+  }
+}

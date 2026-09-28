@@ -1,0 +1,30 @@
+{
+  "name": "@cipher/db",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0"
+  },
+  "devDependencies": {
+    "@cipher/eslint-config": "workspace:*",
+    "@cipher/typescript-config": "workspace:*",
+    "@types/node": "22.20.4",
+    "dotenv": "18.0.4",
+    "eslint": "^9",
+    "prisma": "7.10.0",
+    "typescript": "5.9.3"
+  }
+}

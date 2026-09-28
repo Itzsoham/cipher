@@ -1,0 +1,21 @@
+{
+  "name": "@cipher/crypto",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@cipher/eslint-config": "workspace:*",
+    "@cipher/typescript-config": "workspace:*",
+    "eslint": "^9",
+    "typescript": "5.9.3",
+    "vitest": "5.0.2"
+  }
+}
