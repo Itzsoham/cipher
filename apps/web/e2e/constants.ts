@@ -12,6 +12,8 @@ export const users = {
   reset: `reset@${E2E_DOMAIN}`,
   twoFactor: `two-factor@${E2E_DOMAIN}`,
   stranger: `stranger@${E2E_DOMAIN}`,
+  vault: `vault@${E2E_DOMAIN}`,
+  vaultRecover: `vault-recover@${E2E_DOMAIN}`,
 }
 
 export const E2E_ALLOWLIST = [
@@ -20,7 +22,12 @@ export const E2E_ALLOWLIST = [
   users.signOut,
   users.reset,
   users.twoFactor,
+  users.vault,
+  users.vaultRecover,
 ]
 
 export const PASSWORD = "correct-horse-battery-1"
 export const NEW_PASSWORD = "another-long-password-2"
+export const MASTER_PASSWORD = "master-horse-battery-99!"
+export const NEW_MASTER_PASSWORD = "brand-new-master-secret-77!"
+

@@ -21,7 +21,7 @@ import {
   AAD_LABEL_ENTRY,
   AAD_LABEL_VK_WRAP,
   CRYPTO_VERSION,
-} from "./constants.js"
+} from "./constants"
 
 const encoder = new TextEncoder()
 

@@ -24,9 +24,9 @@ import {
   KEK_BYTES,
   RECOVERY_HKDF_INFO,
   VK_BYTES,
-} from "./constants.js"
-import { type VkWrapMode, vkWrapAad } from "./aad.js"
-import { ab, randomBytes } from "./utils.js"
+} from "./constants"
+import { type VkWrapMode, vkWrapAad } from "./aad"
+import { ab, randomBytes } from "./utils"
 
 // Re-export so callers can build both pieces from one import.
 export type { VkWrapMode }

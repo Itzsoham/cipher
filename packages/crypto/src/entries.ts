@@ -10,10 +10,10 @@
  * swapped without decryption failing.
  */
 
-import { AES_GCM_IV_BYTES } from "./constants.js"
-import { type EntryAadFields, entryAad } from "./aad.js"
-import { pad, unpad } from "./padding.js"
-import { ab, randomBytes } from "./utils.js"
+import { AES_GCM_IV_BYTES } from "./constants"
+import { type EntryAadFields, entryAad } from "./aad"
+import { pad, unpad } from "./padding"
+import { ab, randomBytes } from "./utils"
 
 const AES_GCM_ALGO = "AES-GCM" as const
 

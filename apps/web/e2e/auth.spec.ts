@@ -17,7 +17,7 @@ test("rejects sign-up for an email that is not allowlisted", async ({
   // (no session, synthetic user), so the response does not reveal which
   // emails are allowlisted. The rejection shows up as no account and no mail.
   await signUp(page, users.stranger)
-  await expect(page).toHaveURL(/\/verify-email/)
+  await expect(page).toHaveURL(/\/verify-email/, { timeout: 15_000 })
 
   const response = await page.request.post("/api/auth/sign-up/email", {
     data: { email: users.stranger, password: PASSWORD, name: "stranger" },

@@ -10,7 +10,7 @@ import {
   KDF_CEILING,
   KDF_FLOOR,
   KDF_SALT_BYTES,
-} from "./constants.js"
+} from "./constants"
 
 export interface KdfParams {
   /** Must be exactly "argon2id". */

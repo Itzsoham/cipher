@@ -7,7 +7,7 @@ function buildCsp(nonce: string) {
   const isDev = process.env.NODE_ENV === "development"
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
     // Radix and sonner set inline style attributes, which nonces cannot cover.
     "style-src 'self' 'unsafe-inline'",
     "worker-src 'self' blob:",

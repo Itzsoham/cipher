@@ -49,8 +49,8 @@ import {
   VK_BYTES,
   RECOVERY_HKDF_SALT_BYTES,
   CRYPTO_VERSION,
-} from "../src/index.js"
-import { ab } from "../src/utils.js"
+} from "../src/index"
+import { ab } from "../src/utils"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

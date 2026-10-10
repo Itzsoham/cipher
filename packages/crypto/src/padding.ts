@@ -19,7 +19,7 @@ import {
   PADDING_BUCKET_BYTES,
   PADDING_HEADER_BYTES,
   PADDING_MIN_BYTES,
-} from "./constants.js"
+} from "./constants"
 
 /**
  * Returns the padded size for a given plaintext length.

@@ -23,13 +23,13 @@ export {
   PADDING_MIN_BYTES,
   AAD_LABEL_VK_WRAP,
   AAD_LABEL_ENTRY,
-} from "./constants.js"
+} from "./constants"
 
 // ── KDF parameter validation ──────────────────────────────────────────────────
-export { type KdfParams, validateKdfParams } from "./kdf-params.js"
+export { type KdfParams, validateKdfParams } from "./kdf-params"
 
 // ── Padding ───────────────────────────────────────────────────────────────────
-export { paddedSize, pad, unpad } from "./padding.js"
+export { paddedSize, pad, unpad } from "./padding"
 
 // ── AAD ───────────────────────────────────────────────────────────────────────
 export {
@@ -37,7 +37,7 @@ export {
   type EntryAadFields,
   vkWrapAad,
   entryAad,
-} from "./aad.js"
+} from "./aad"
 
 // ── Vault Key lifecycle ───────────────────────────────────────────────────────
 export {
@@ -48,7 +48,7 @@ export {
   wrapVaultKey,
   unwrapVaultKey,
   deriveRecoveryKek,
-} from "./vault-key.js"
+} from "./vault-key"
 
 // ── Entry encryption ──────────────────────────────────────────────────────────
 export {
@@ -56,4 +56,4 @@ export {
   type EncryptedEntry,
   encryptEntry,
   decryptEntry,
-} from "./entries.js"
+} from "./entries"

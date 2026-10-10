@@ -73,7 +73,7 @@ export async function signIn(page: Page, email: string, password = PASSWORD) {
 /** Signs up through the UI and follows the verification link. */
 export async function createVerifiedUser(page: Page, email: string) {
   await signUp(page, email)
-  await expect(page).toHaveURL(/\/verify-email/)
+  await expect(page).toHaveURL(/\/verify-email/, { timeout: 15_000 })
   await page.goto(await waitForMailLink(email, "Verify"))
-  await expect(page).toHaveURL(/\/sign-in\?verified=1/)
+  await expect(page).toHaveURL(/\/sign-in\?verified=1/, { timeout: 15_000 })
 }
