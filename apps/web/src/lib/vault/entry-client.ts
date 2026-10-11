@@ -5,6 +5,7 @@ import type {
   EntryType,
   PasswordEntryPayload,
   SecureNoteEntryPayload,
+  FileEntryPayload,
 } from "./entry-types"
 import { bytesToHex, hexToBytes } from "./hex"
 
@@ -16,6 +17,9 @@ export interface RawServerEntry {
   entryVersion: number
   encryptedData: string // base64
   iv: string // hex
+  r2Key?: string
+  blobIv?: string
+  blobSize?: number
   createdAt: string
   updatedAt: string
 }
@@ -69,7 +73,7 @@ export async function fetchAndDecryptEntries(
             createdAt: entry.createdAt,
             updatedAt: entry.updatedAt,
           }
-        } else {
+        } else if (entry.type === "secure_note") {
           return {
             id: entry.id,
             type: "secure_note",
@@ -77,6 +81,20 @@ export async function fetchAndDecryptEntries(
             vaultKeyVersion: entry.vaultKeyVersion,
             entryVersion: entry.entryVersion,
             data: plaintext as SecureNoteEntryPayload,
+            createdAt: entry.createdAt,
+            updatedAt: entry.updatedAt,
+          }
+        } else {
+          return {
+            id: entry.id,
+            type: "file",
+            cryptoVersion: entry.cryptoVersion,
+            vaultKeyVersion: entry.vaultKeyVersion,
+            entryVersion: entry.entryVersion,
+            data: plaintext as FileEntryPayload,
+            r2Key: (entry as { r2Key?: string }).r2Key,
+            blobIv: (entry as { blobIv?: string }).blobIv,
+            blobSize: (entry as { blobSize?: number }).blobSize,
             createdAt: entry.createdAt,
             updatedAt: entry.updatedAt,
           }

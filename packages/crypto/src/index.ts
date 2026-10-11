@@ -23,6 +23,7 @@ export {
   PADDING_MIN_BYTES,
   AAD_LABEL_VK_WRAP,
   AAD_LABEL_ENTRY,
+  AAD_LABEL_FILE_BLOB,
 } from "./constants"
 
 // ── KDF parameter validation ──────────────────────────────────────────────────
@@ -35,8 +36,10 @@ export { paddedSize, pad, unpad } from "./padding"
 export {
   type VkWrapMode,
   type EntryAadFields,
+  type FileBlobAadFields,
   vkWrapAad,
   entryAad,
+  fileBlobAad,
 } from "./aad"
 
 // ── Vault Key lifecycle ───────────────────────────────────────────────────────
@@ -55,9 +58,18 @@ export {
   type CustomField,
   type PasswordEntryPayload,
   type SecureNoteEntryPayload,
+  type FileEntryPayload,
   type EntryPlaintext,
   type EncryptedEntry,
   encryptEntry,
   decryptEntry,
 } from "./entries"
+
+// ── File blob encryption (Phase 5) ───────────────────────────────────────────
+export {
+  type EncryptedFileBlob,
+  encryptFileBlob,
+  decryptFileBlob,
+} from "./files"
+
 

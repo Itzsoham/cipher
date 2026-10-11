@@ -51,6 +51,9 @@ packages/db/src/generated
 # dev/test mail transport
 .mail/
 
+# dev/test local storage
+.storage/
+
 # playwright
 test-results/
 playwright-report/

@@ -14,6 +14,8 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1149.0",
+    "@aws-sdk/s3-request-presigner": "^3.1149.0",
     "@cipher/crypto": "workspace:*",
     "@cipher/db": "workspace:*",
     "@cipher/ui": "workspace:*",

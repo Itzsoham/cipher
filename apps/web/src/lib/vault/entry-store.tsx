@@ -21,6 +21,8 @@ interface EntryContextValue {
   filteredEntries: DecryptedVaultEntry[]
   selectedId: string | null
   selectedEntry: DecryptedVaultEntry | null
+  vk: CryptoKey | null
+  userId: string | null
   filterType: "all" | EntryType
   searchQuery: string
   isLoading: boolean
@@ -30,9 +32,10 @@ interface EntryContextValue {
   setSearchQuery: (query: string) => void
   refreshEntries: () => Promise<void>
   addEntry: (
-    type: EntryType,
+    type: "password" | "secure_note",
     data: PasswordEntryPayload | SecureNoteEntryPayload
   ) => Promise<DecryptedVaultEntry>
+  addFileEntry: (entry: DecryptedVaultEntry) => void
   editEntry: (
     id: string,
     type: EntryType,
@@ -108,9 +111,14 @@ export function EntryProvider({ vk, userId, children }: EntryProviderProps) {
     }
   }, [vk, userId])
 
+  const addFileEntry = React.useCallback((entry: DecryptedVaultEntry) => {
+    setEntries((prev) => [entry, ...prev])
+    setSelectedId(entry.id)
+  }, [])
+
   const addEntry = React.useCallback(
     async (
-      type: EntryType,
+      type: "password" | "secure_note",
       data: PasswordEntryPayload | SecureNoteEntryPayload
     ): Promise<DecryptedVaultEntry> => {
       if (!vk || !userId) throw new Error("Vault is locked")
@@ -263,6 +271,23 @@ export function EntryProvider({ vk, userId, children }: EntryProviderProps) {
         return false
       }
 
+      // File entries: search in fileName and notes
+      if (entry.type === "file") {
+        const d = entry.data
+        if (d.fileName.toLowerCase().includes(q)) return true
+        if (d.notes && d.notes.toLowerCase().includes(q)) return true
+        if (
+          d.customFields?.some(
+            (f) =>
+              f.type === "text" &&
+              (f.name.toLowerCase().includes(q) || f.value.toLowerCase().includes(q))
+          )
+        ) {
+          return true
+        }
+        return false
+      }
+
       return false
     })
   }, [entries, filterType, searchQuery])
@@ -277,6 +302,8 @@ export function EntryProvider({ vk, userId, children }: EntryProviderProps) {
     filteredEntries,
     selectedId,
     selectedEntry,
+    vk,
+    userId,
     filterType,
     searchQuery,
     isLoading,
@@ -286,6 +313,7 @@ export function EntryProvider({ vk, userId, children }: EntryProviderProps) {
     setSearchQuery,
     refreshEntries,
     addEntry,
+    addFileEntry,
     editEntry,
     removeEntry,
     bulkRemoveEntries,

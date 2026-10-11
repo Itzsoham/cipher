@@ -40,8 +40,20 @@ export interface SecureNoteEntryPayload {
   customFields?: CustomField[]
 }
 
+export interface FileEntryPayload {
+  fileName: string
+  mimeType: string
+  fileSize: number // original plaintext file size in bytes
+  notes?: string
+  customFields?: CustomField[]
+}
+
 /** The raw data that lives in the vault entry JSON before encryption. */
-export type EntryPlaintext = PasswordEntryPayload | SecureNoteEntryPayload | Record<string, unknown>
+export type EntryPlaintext =
+  | PasswordEntryPayload
+  | SecureNoteEntryPayload
+  | FileEntryPayload
+  | Record<string, unknown>
 
 export interface EncryptedEntry {
   /** AES-GCM ciphertext (padded JSON + 128-bit tag). */

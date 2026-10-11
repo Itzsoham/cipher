@@ -15,6 +15,7 @@ export const users = {
   vault: `vault@${E2E_DOMAIN}`,
   vaultRecover: `vault-recover@${E2E_DOMAIN}`,
   vaultEntries: `vault-entries@${E2E_DOMAIN}`,
+  vaultFiles: `vault-files@${E2E_DOMAIN}`,
 }
 
 export const E2E_ALLOWLIST = [
@@ -26,6 +27,7 @@ export const E2E_ALLOWLIST = [
   users.vault,
   users.vaultRecover,
   users.vaultEntries,
+  users.vaultFiles,
 ]
 
 export const PASSWORD = "correct-horse-battery-1"

@@ -5,14 +5,18 @@ const PROTECTED_PREFIXES = ["/vault", "/settings"]
 
 function buildCsp(nonce: string) {
   const isDev = process.env.NODE_ENV === "development"
+  const r2Endpoint = process.env.R2_ENDPOINT || ""
+  const r2Connect = r2Endpoint ? ` ${r2Endpoint}` : ""
+
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval'${isDev ? " 'unsafe-eval'" : ""}`,
     // Radix and sonner set inline style attributes, which nonces cannot cover.
     "style-src 'self' 'unsafe-inline'",
     "worker-src 'self' blob:",
-    "connect-src 'self'",
+    `connect-src 'self'${r2Connect}`,
     "img-src 'self' data: blob:",
+    "frame-src blob:",
     "font-src 'self'",
     "object-src 'none'",
     "frame-ancestors 'none'",

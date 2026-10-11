@@ -98,7 +98,7 @@ test.describe("Vault Entries & Zero-Knowledge (Phase 4)", () => {
 
     // 5. Create Secure Note Entry
     await page.getByRole("button", { name: "New Entry" }).click()
-    await page.getByRole("button", { name: "Secure Note" }).click()
+    await page.getByRole("button", { name: /Secure Note|Note/ }).click()
     await page.locator("#entry-title").fill("Recovery Seeds Backup")
     await page.locator("#entry-text").fill("apple banana cherry dog elephant fox grape")
     await page.getByRole("button", { name: "Create Entry" }).click()
@@ -152,6 +152,117 @@ test.describe("Vault Entries & Zero-Knowledge (Phase 4)", () => {
     await expect(page.getByText("Unlock Your Vault")).toBeVisible()
     await expect(page.getByText("GitHub Production Updated")).not.toBeVisible()
     await expect(page.getByText("SuperSecretKey#999")).not.toBeVisible()
+  })
+
+  test("handles tampered ciphertext with a non-blocking Decrypt Failure row", async ({
+    page,
+  }) => {
+    await createVerifiedUser(page, users.vaultEntries)
+    await signIn(page, users.vaultEntries)
+    await expect(page).toHaveURL(/\/vault$/, { timeout: 15_000 })
+
+    await page.locator("#master-password").fill(MASTER_PASSWORD)
+    await page.locator("#confirm-password").fill(MASTER_PASSWORD)
+    await page.getByRole("button", { name: "Continue to Recovery Key" }).click()
+
+    const recoveryKeyEl = page.locator("div.font-mono.select-all")
+    const recoveryKeyText = (await recoveryKeyEl.textContent())?.trim() ?? ""
+    const lastGroup = recoveryKeyText.split("-").pop()!
+    await page.locator("#confirm-recovery").fill(lastGroup)
+    await page.getByRole("button", { name: "Complete Vault Setup" }).click()
+
+    // Create one valid entry
+    await page.getByRole("button", { name: "New Entry" }).click()
+    await page.locator("#entry-title").fill("Healthy Entry")
+    await page.locator("#entry-password").fill("HealthyPassword123")
+    await page.getByRole("button", { name: "Create Entry" }).click()
+    await expect(page.getByRole("heading", { name: "Healthy Entry" })).toBeVisible()
+
+    // Intercept GET /api/vault/entries and inject a tampered entry alongside the healthy one
+    await page.route("**/api/vault/entries", async (route) => {
+      if (route.request().method() === "GET") {
+        const response = await route.fetch()
+        const json = await response.json()
+        if (Array.isArray(json) && json.length > 0) {
+          json.push({
+            id: "00000000-0000-0000-0000-000000000001",
+            type: "password",
+            cryptoVersion: 1,
+            vaultKeyVersion: 1,
+            entryVersion: 1,
+            encryptedData: "BAD_CIPHERTEXT_BASE64_DATA==",
+            iv: "00112233445566778899aabb",
+            r2Key: null,
+            blobIv: null,
+            blobSize: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+        }
+        await route.fulfill({ json })
+        return
+      }
+      await route.continue()
+    })
+
+    // Reload vault page to trigger fetch with tampered entry
+    await page.reload()
+    await page.locator("#unlock-password").fill(MASTER_PASSWORD)
+    await page.getByRole("button", { name: "Unlock Vault" }).click()
+
+    // The healthy entry MUST still be decrypted and visible
+    await expect(page.getByText("Healthy Entry")).toBeVisible()
+
+    // The tampered entry MUST display a Could Not Decrypt row, not crash or hide
+    await expect(page.getByText("Could Not Decrypt")).toBeVisible()
+    await page.getByText("Could Not Decrypt").click()
+    await expect(page.getByText("Could Not Decrypt Entry")).toBeVisible()
+    await expect(
+      page.getByText("This record failed authentication tag or AAD verification")
+    ).toBeVisible()
+  })
+
+  test("bulk delete removes multiple selected entries atomically", async ({
+    page,
+  }) => {
+    await createVerifiedUser(page, users.vaultEntries)
+    await signIn(page, users.vaultEntries)
+    await expect(page).toHaveURL(/\/vault$/, { timeout: 15_000 })
+
+    await page.locator("#master-password").fill(MASTER_PASSWORD)
+    await page.locator("#confirm-password").fill(MASTER_PASSWORD)
+    await page.getByRole("button", { name: "Continue to Recovery Key" }).click()
+
+    const recoveryKeyEl = page.locator("div.font-mono.select-all")
+    const recoveryKeyText = (await recoveryKeyEl.textContent())?.trim() ?? ""
+    const lastGroup = recoveryKeyText.split("-").pop()!
+    await page.locator("#confirm-recovery").fill(lastGroup)
+    await page.getByRole("button", { name: "Complete Vault Setup" }).click()
+
+    // Create entry 1
+    await page.getByRole("button", { name: "New Entry" }).click()
+    await page.locator("#entry-title").fill("Item to Delete 1")
+    await page.getByRole("button", { name: "Create Entry" }).click()
+    await expect(page.getByText("Entry created successfully")).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole("heading", { name: "Item to Delete 1" })).toBeVisible({ timeout: 15_000 })
+
+    // Create entry 2
+    await page.getByRole("button", { name: "New Entry" }).click()
+    await page.locator("#entry-title").fill("Item to Delete 2")
+    await page.getByRole("button", { name: "Create Entry" }).click()
+    await expect(page.getByText("Entry created successfully")).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole("heading", { name: "Item to Delete 2" })).toBeVisible({ timeout: 15_000 })
+
+    // Enter bulk select mode
+    await page.getByRole("button", { name: "Select" }).click()
+    await page.getByRole("button", { name: "Select All" }).click()
+
+    // Click Delete Selected
+    await page.getByRole("button", { name: /Delete \(2\)/ }).click()
+
+    await expect(page.getByText("Deleted 2 entries")).toBeVisible()
+    await expect(page.getByText("Item to Delete 1")).not.toBeVisible()
+    await expect(page.getByText("Item to Delete 2")).not.toBeVisible()
   })
 })
 

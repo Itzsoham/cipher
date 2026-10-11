@@ -7,12 +7,14 @@ import {
   type EntryType,
   isDecryptFailed,
 } from "@/lib/vault/entry-types"
+import { formatBytes } from "@/lib/vault/file-client"
 import { Button } from "@cipher/ui/components/button"
 import { Input } from "@cipher/ui/components/input"
 import {
   AlertTriangle,
   CheckSquare,
   Copy,
+  FileText,
   KeyRound,
   Loader2,
   Plus,
@@ -142,6 +144,7 @@ export function EntryList() {
               { id: "all", label: "All" },
               { id: "password", label: "Passwords" },
               { id: "secure_note", label: "Notes" },
+              { id: "file", label: "Files" },
             ] as const
           ).map((tab) => (
             <button
@@ -218,10 +221,14 @@ export function EntryList() {
             let subtitle = ""
 
             if (!failed) {
-              title = entry.data.title
-              if (entry.type === "password") {
+              if (entry.type === "file") {
+                title = entry.data.fileName
+                subtitle = formatBytes(entry.data.fileSize)
+              } else if (entry.type === "password") {
+                title = entry.data.title
                 subtitle = entry.data.username || entry.data.url || ""
               } else {
+                title = entry.data.title
                 subtitle = entry.data.text.slice(0, 40)
               }
             }
@@ -269,6 +276,8 @@ export function EntryList() {
                         <AlertTriangle className="size-4" />
                       ) : entry.type === "password" ? (
                         <KeyRound className="size-4" />
+                      ) : entry.type === "file" ? (
+                        <FileText className="size-4" />
                       ) : (
                         <StickyNote className="size-4" />
                       )}

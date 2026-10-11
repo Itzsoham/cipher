@@ -19,6 +19,7 @@
 
 import {
   AAD_LABEL_ENTRY,
+  AAD_LABEL_FILE_BLOB,
   AAD_LABEL_VK_WRAP,
   CRYPTO_VERSION,
 } from "./constants"
@@ -77,3 +78,35 @@ export function entryAad(fields: EntryAadFields): Uint8Array {
     ])
   )
 }
+
+// ── File blob encryption AAD (Phase 5) ──────────────────────────────────────
+
+export interface FileBlobAadFields {
+  entryId: string
+  userId: string
+  /** Canonical S3/R2 storage key: "u/<userId>/<uuid>". */
+  r2Key: string
+  /** Matches `VaultConfig.vaultKeyVersion`. */
+  vaultKeyVersion: number
+}
+
+/**
+ * Builds the AAD bytes for encrypting/decrypting a file blob.
+ *
+ * Array: `["cipher-file-blob", cryptoVersion, entryId, userId, r2Key, vaultKeyVersion]`
+ *
+ * Binding `entryId`, `userId`, and `r2Key` prevents swapping blobs between entries or users.
+ */
+export function fileBlobAad(fields: FileBlobAadFields): Uint8Array {
+  return encoder.encode(
+    JSON.stringify([
+      AAD_LABEL_FILE_BLOB,
+      CRYPTO_VERSION,
+      fields.entryId,
+      fields.userId,
+      fields.r2Key,
+      fields.vaultKeyVersion,
+    ])
+  )
+}
+

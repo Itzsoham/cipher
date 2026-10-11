@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { checkRateLimit } from "@/lib/rate-limit"
+import { storage } from "@/lib/storage"
 import { AES_GCM_IV_BYTES } from "@cipher/crypto"
 import { prisma } from "@cipher/db"
 import { headers } from "next/headers"
@@ -9,10 +10,11 @@ const MAX_USER_ENTRIES = 5000
 const MAX_TOTAL_CIPHERTEXT_BYTES = 20 * 1024 * 1024 // 20 MiB
 const MAX_ENTRY_CIPHERTEXT_BYTES = 64 * 1024 // 64 KiB
 const MAX_BASE64_LENGTH = Math.ceil(MAX_ENTRY_CIPHERTEXT_BYTES / 3) * 4 + 4
+const MAX_FILE_CIPHERTEXT_BYTES = 25 * 1024 * 1024 + 16 // 25 MB + 16 bytes tag
+const MAX_USER_FILE_QUOTA_BYTES = 250 * 1024 * 1024 // 250 MiB
 
-const createEntrySchema = z.object({
+const baseEntryFields = {
   id: z.string().uuid(),
-  type: z.enum(["password", "secure_note"]),
   encryptedData: z
     .string()
     .min(1)
@@ -34,7 +36,29 @@ const createEntrySchema = z.object({
     .regex(/^[0-9a-fA-F]+$/),
   cryptoVersion: z.number().int().positive().default(1),
   vaultKeyVersion: z.number().int().positive().default(1),
+}
+
+const fileFields = z.object({
+  type: z.literal("file"),
+  r2Key: z.string().regex(/^u\/[^/]+\/[0-9a-fA-F-]{36}$/, "Invalid r2Key format"),
+  blobIv: z
+    .string()
+    .length(AES_GCM_IV_BYTES * 2, `blobIv must be ${AES_GCM_IV_BYTES * 2} hex characters`)
+    .regex(/^[0-9a-fA-F]+$/),
+  blobSize: z.number().int().min(17).max(MAX_FILE_CIPHERTEXT_BYTES),
 })
+
+const passwordOrNoteFields = z.object({
+  type: z.enum(["password", "secure_note"]),
+  r2Key: z.undefined().optional(),
+  blobIv: z.undefined().optional(),
+  blobSize: z.undefined().optional(),
+})
+
+const createEntrySchema = z.discriminatedUnion("type", [
+  z.object({ ...baseEntryFields, ...fileFields.shape }),
+  z.object({ ...baseEntryFields, ...passwordOrNoteFields.shape }),
+])
 
 const bulkDeleteSchema = z.object({
   ids: z.array(z.string().uuid()).min(1).max(100),
@@ -58,6 +82,9 @@ export async function GET() {
       entryVersion: true,
       encryptedData: true,
       iv: true,
+      r2Key: true,
+      blobIv: true,
+      blobSize: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -71,6 +98,9 @@ export async function GET() {
     entryVersion: entry.entryVersion,
     encryptedData: Buffer.from(entry.encryptedData).toString("base64"),
     iv: Buffer.from(entry.iv).toString("hex"),
+    r2Key: entry.r2Key ?? undefined,
+    blobIv: entry.blobIv ? Buffer.from(entry.blobIv).toString("hex") : undefined,
+    blobSize: entry.blobSize ?? undefined,
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
   }))
@@ -111,6 +141,44 @@ export async function POST(req: Request) {
   const dataBuffer = Buffer.from(data.encryptedData, "base64")
   const ivBuffer = Buffer.from(data.iv, "hex")
 
+  // For file entries: verify ownership prefix and HeadObject before writing DB
+  let blobIvBuffer: Buffer | null = null
+  let r2KeyVal: string | null = null
+  let blobSizeVal: number | null = null
+
+  if (data.type === "file") {
+    // 1. Ownership prefix check
+    const expectedPrefix = `u/${session.user.id}/`
+    if (!data.r2Key.startsWith(expectedPrefix)) {
+      return Response.json(
+        { error: "Forbidden: r2Key does not belong to session user" },
+        { status: 403 }
+      )
+    }
+
+    // 2. HeadObject verification
+    const head = await storage.headObject(data.r2Key)
+    if (!head.exists) {
+      return Response.json(
+        { error: "Storage object not found. Upload may have failed." },
+        { status: 422 }
+      )
+    }
+
+    if (head.contentLength !== data.blobSize) {
+      return Response.json(
+        {
+          error: `Storage size mismatch: declared ${data.blobSize} bytes, but stored object is ${head.contentLength} bytes.`,
+        },
+        { status: 422 }
+      )
+    }
+
+    blobIvBuffer = Buffer.from(data.blobIv, "hex")
+    r2KeyVal = data.r2Key
+    blobSizeVal = data.blobSize
+  }
+
   try {
     const result = await prisma.$transaction(async (tx) => {
       // 1. Quota check: entry count
@@ -121,7 +189,7 @@ export async function POST(req: Request) {
         throw new Error("ENTRY_COUNT_EXCEEDED")
       }
 
-      // 2. Quota check: total ciphertext size
+      // 2. Quota check: total entry ciphertext size
       const existingEntries = await tx.vaultEntry.findMany({
         where: { userId: session.user.id },
         select: { encryptedData: true },
@@ -134,7 +202,19 @@ export async function POST(req: Request) {
         throw new Error("CIPHERTEXT_QUOTA_EXCEEDED")
       }
 
-      // 3. Create entry
+      // 3. For file entries: check user file quota
+      if (data.type === "file" && blobSizeVal !== null) {
+        const userFiles = await tx.vaultEntry.findMany({
+          where: { userId: session.user.id, type: "file", blobSize: { not: null } },
+          select: { blobSize: true },
+        })
+        const totalFileBytes = userFiles.reduce((acc, curr) => acc + (curr.blobSize ?? 0), 0)
+        if (totalFileBytes + blobSizeVal > MAX_USER_FILE_QUOTA_BYTES) {
+          throw new Error("FILE_QUOTA_EXCEEDED")
+        }
+      }
+
+      // 4. Create entry
       return await tx.vaultEntry.create({
         data: {
           id: data.id,
@@ -143,8 +223,11 @@ export async function POST(req: Request) {
           cryptoVersion: data.cryptoVersion,
           vaultKeyVersion: data.vaultKeyVersion,
           entryVersion: 1,
-          encryptedData: dataBuffer,
-          iv: ivBuffer,
+          encryptedData: new Uint8Array(dataBuffer),
+          iv: new Uint8Array(ivBuffer),
+          r2Key: r2KeyVal,
+          blobIv: blobIvBuffer ? new Uint8Array(blobIvBuffer) : null,
+          blobSize: blobSizeVal,
         },
       })
     })
@@ -171,8 +254,13 @@ export async function POST(req: Request) {
           { status: 413 }
         )
       }
+      if (err.message === "FILE_QUOTA_EXCEEDED") {
+        return Response.json(
+          { error: "Total file storage quota (250 MiB) exceeded" },
+          { status: 413 }
+        )
+      }
     }
-    // Handle unique constraint failure (e.g. duplicate id)
     if (typeof err === "object" && err !== null && "code" in err && err.code === "P2002") {
       return Response.json({ error: "Entry with this id already exists" }, { status: 409 })
     }
@@ -211,32 +299,40 @@ export async function DELETE(req: Request) {
 
   const { ids, v } = parsed.data
 
-  // Fetch all requested entries owned by user to verify ownership and versions
+  // Fetch all requested entries owned by user to verify ownership, versions, and identify r2Keys
   const entries = await prisma.vaultEntry.findMany({
     where: {
       id: { in: ids },
       userId: session.user.id,
     },
-    select: { id: true, entryVersion: true },
+    select: { id: true, entryVersion: true, type: true, r2Key: true },
   })
 
   const toDelete: string[] = []
   const stale: string[] = []
+  const r2KeysToDelete: string[] = []
 
   for (const entry of entries) {
     if (v && v[entry.id] !== undefined) {
       if (v[entry.id] === entry.entryVersion) {
         toDelete.push(entry.id)
+        if (entry.type === "file" && entry.r2Key) {
+          r2KeysToDelete.push(entry.r2Key)
+        }
       } else {
         stale.push(entry.id)
       }
     } else {
       toDelete.push(entry.id)
+      if (entry.type === "file" && entry.r2Key) {
+        r2KeysToDelete.push(entry.r2Key)
+      }
     }
   }
 
   let deletedCount = 0
   if (toDelete.length > 0) {
+    // 1. Delete rows from DB FIRST (safe delete order)
     const res = await prisma.vaultEntry.deleteMany({
       where: {
         id: { in: toDelete },
@@ -244,6 +340,15 @@ export async function DELETE(req: Request) {
       },
     })
     deletedCount = res.count
+
+    // 2. Only after DB deletion succeeds: clean up R2 objects
+    if (r2KeysToDelete.length > 0) {
+      try {
+        await storage.deleteObjects(r2KeysToDelete)
+      } catch (err) {
+        console.warn("Non-fatal: failed to delete R2 objects during bulk delete", err)
+      }
+    }
   }
 
   return Response.json({
@@ -251,4 +356,3 @@ export async function DELETE(req: Request) {
     stale,
   })
 }
-

@@ -2,11 +2,17 @@ import type {
   CustomField,
   PasswordEntryPayload,
   SecureNoteEntryPayload,
+  FileEntryPayload,
 } from "@cipher/crypto"
 
-export type { CustomField, PasswordEntryPayload, SecureNoteEntryPayload }
+export type {
+  CustomField,
+  PasswordEntryPayload,
+  SecureNoteEntryPayload,
+  FileEntryPayload,
+}
 
-export type EntryType = "password" | "secure_note"
+export type EntryType = "password" | "secure_note" | "file"
 
 export interface DecryptedPasswordEntry {
   id: string
@@ -30,6 +36,20 @@ export interface DecryptedSecureNoteEntry {
   updatedAt: string
 }
 
+export interface DecryptedFileEntry {
+  id: string
+  type: "file"
+  cryptoVersion: number
+  vaultKeyVersion: number
+  entryVersion: number
+  data: FileEntryPayload
+  r2Key?: string
+  blobIv?: string
+  blobSize?: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface DecryptFailedEntry {
   id: string
   type: EntryType
@@ -44,6 +64,7 @@ export interface DecryptFailedEntry {
 export type DecryptedVaultEntry =
   | DecryptedPasswordEntry
   | DecryptedSecureNoteEntry
+  | DecryptedFileEntry
   | DecryptFailedEntry
 
 export function isDecryptFailed(

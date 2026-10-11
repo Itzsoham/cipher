@@ -72,3 +72,7 @@ export const AAD_LABEL_VK_WRAP = "cipher-vk-wrap"
 
 /** Prefix used in the AAD for encrypting vault entries. */
 export const AAD_LABEL_ENTRY = "cipher-entry"
+
+/** Prefix used in the AAD for encrypting file blobs. */
+export const AAD_LABEL_FILE_BLOB = "cipher-file-blob"
+
