@@ -89,7 +89,7 @@ describe("Recovery Key (Crockford Base32 with 24-bit SHA-256 Checksum)", () => {
 
     const raw = formatted.replace(/-/g, "")
     // Find two different characters and swap them
-    let idx1 = 0
+    const idx1 = 0
     let idx2 = 1
     while (idx2 < raw.length && raw[idx1] === raw[idx2]) {
       idx2++

@@ -52,8 +52,12 @@ export {
 
 // ── Entry encryption ──────────────────────────────────────────────────────────
 export {
+  type CustomField,
+  type PasswordEntryPayload,
+  type SecureNoteEntryPayload,
   type EntryPlaintext,
   type EncryptedEntry,
   encryptEntry,
   decryptEntry,
 } from "./entries"
+

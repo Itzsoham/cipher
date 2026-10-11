@@ -19,8 +19,29 @@ const AES_GCM_ALGO = "AES-GCM" as const
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface CustomField {
+  name: string
+  value: string
+  type: "text" | "hidden"
+}
+
+export interface PasswordEntryPayload {
+  title: string
+  username?: string
+  password?: string
+  url?: string
+  notes?: string
+  customFields?: CustomField[]
+}
+
+export interface SecureNoteEntryPayload {
+  title: string
+  text: string
+  customFields?: CustomField[]
+}
+
 /** The raw data that lives in the vault entry JSON before encryption. */
-export type EntryPlaintext = Record<string, unknown>
+export type EntryPlaintext = PasswordEntryPayload | SecureNoteEntryPayload | Record<string, unknown>
 
 export interface EncryptedEntry {
   /** AES-GCM ciphertext (padded JSON + 128-bit tag). */

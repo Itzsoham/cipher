@@ -71,7 +71,7 @@ test.describe("Vault Lifecycle (Phase 3)", () => {
 
     // 4. Vault is now unlocked
     await expect(page.getByTestId("vault-unlocked-status")).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByText("Your Zero-Knowledge Vault is Ready")).toBeVisible()
+    await expect(page.getByText("Vault Entries")).toBeVisible()
 
     // 5. Cross-tab lock sync
     const page2 = await context.newPage()

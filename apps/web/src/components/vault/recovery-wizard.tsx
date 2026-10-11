@@ -48,6 +48,7 @@ interface RecoveryWizardProps {
     name?: string | null
   }
   onCancel?: () => void
+  onComplete?: () => void
 }
 
 interface StagedRecoveryData {
@@ -69,7 +70,11 @@ interface StagedNewWraps {
   newKekRaw: Uint8Array
 }
 
-export function RecoveryWizard({ user, onCancel }: RecoveryWizardProps) {
+export function RecoveryWizard({
+  user,
+  onCancel,
+  onComplete,
+}: RecoveryWizardProps) {
   const { config, refreshConfig, setSessionUnlocked } = useVault()
 
   const [step, setStep] = useState<"enter-key" | "new-password" | "confirm-new-key">("enter-key")
@@ -274,6 +279,7 @@ export function RecoveryWizard({ user, onCancel }: RecoveryWizardProps) {
           vaultKeyVersion: config?.vaultKeyVersion ?? 1,
           userId: user.id,
         })
+        onComplete?.()
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : "Recovery failed"
         toast.error(msg)

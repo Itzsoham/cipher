@@ -6,6 +6,7 @@ import { SetupWizard } from "@/components/vault/setup-wizard"
 import { UnlockModal } from "@/components/vault/unlock-modal"
 import { RecoveryWizard } from "@/components/vault/recovery-wizard"
 import { VaultStatusBar } from "@/components/vault/vault-status-bar"
+import { EntryDashboard } from "@/components/vault/entries/entry-dashboard"
 import { Loader2, Shield } from "lucide-react"
 
 interface VaultViewProps {
@@ -17,8 +18,9 @@ interface VaultViewProps {
 }
 
 export function VaultView({ user }: VaultViewProps) {
-  const { status } = useVault()
+  const { status, sessionVK } = useVault()
   const [showRecovery, setShowRecovery] = useState(false)
+
 
   if (status === "loading") {
     return (
@@ -36,17 +38,29 @@ export function VaultView({ user }: VaultViewProps) {
   if (status === "locked") {
     if (showRecovery) {
       return (
-        <RecoveryWizard user={user} onCancel={() => setShowRecovery(false)} />
+        <RecoveryWizard
+          user={user}
+          onCancel={() => setShowRecovery(false)}
+          onComplete={() => setShowRecovery(false)}
+        />
       )
     }
     return <UnlockModal onSwitchToRecovery={() => setShowRecovery(true)} />
   }
 
-  // Unlocked state (Phase 3 Dashboard)
+  // Unlocked state (Phase 4 Dashboard)
+  if (sessionVK) {
+    return (
+      <div className="space-y-4">
+        <VaultStatusBar />
+        <EntryDashboard vk={sessionVK} userId={user.id} />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <VaultStatusBar />
-
       <div className="rounded-2xl border border-dashed p-8 text-center sm:p-12">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Shield className="h-6 w-6" />
@@ -55,14 +69,10 @@ export function VaultView({ user }: VaultViewProps) {
           Your Zero-Knowledge Vault is Ready
         </h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Your Vault Key is decrypted in client memory with AES-256-GCM. Entry
-          encryption and management arrive in Phase 4.
-        </p>
-        <p className="mt-4 text-xs text-muted-foreground">
-          Test auto-lock by leaving this tab idle, or use the Settings page to
-          test password change and recovery key rotation.
+          Vault Key is active in memory.
         </p>
       </div>
     </div>
   )
 }
+

@@ -140,6 +140,7 @@ model VaultEntry {
   type            EntryType // plaintext
   cryptoVersion   Int       @default(1)
   vaultKeyVersion Int       @default(1)
+  entryVersion    Int       @default(1)
   encryptedData   Bytes // padded JSON (title, site, username, … | fileName, mimeType, size)
   iv              Bytes
   r2Key           String?   @unique // "u/<userId>/<uuid>", never derived from filename
